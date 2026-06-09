@@ -30,7 +30,7 @@ cd Steam-GameRenamer-Plugin
 #### Step 2: Install Dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 #### Step 3: Build the Plugin
@@ -38,13 +38,13 @@ npm install
 **For development (auto-rebuilds on changes):**
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 **For production:**
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 #### Step 4: Install to Steam
