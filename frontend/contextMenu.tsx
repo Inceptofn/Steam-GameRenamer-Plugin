@@ -1,6 +1,6 @@
-import { pluginConfig, showModal, ConfirmModal, TextField } from "@steambrew/client";
+import { showModal, ConfirmModal, TextField } from "@steambrew/client";
 import React, { useState } from "react";
-import { state } from "./state";
+import { state, saveConfig } from "./state";
 import { findAppId, applyMapChange } from "./dom";
 import { setCustomSortAs } from "./steam";
 
@@ -255,7 +255,7 @@ function tryInjectRenameItem(
 
                     if (appId != null) {
                         state.appIdMap[originalName] = appId;
-                        pluginConfig.set("appIdMap", state.appIdMap);
+                        saveConfig();
 
                         if (state.sortEnabled) {
                             setCustomSortAs(appId, reverting ? "" : trimmed);

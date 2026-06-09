@@ -1,5 +1,4 @@
-import { pluginConfig } from "@steambrew/client";
-import { state, RenameMap } from "./state";
+import { state, RenameMap, saveConfig } from "./state";
 
 /**
  * Returns true if the node (or any of its ancestors) carries an attribute ending in
@@ -92,7 +91,7 @@ export function applyMapChange(next: RenameMap) {
     }
 
     state.currentMap = next;
-    pluginConfig.set("renameMap", next);
+    saveConfig();
 
     if (Object.keys(transition).length > 0) {
         for (const doc of state.watchedDocuments) {

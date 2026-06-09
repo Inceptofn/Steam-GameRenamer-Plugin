@@ -1,26 +1,15 @@
-import { Field, TextField, DialogButton, ToggleField, pluginConfig } from "@steambrew/client";
-import React, { useState, useEffect } from "react";
-import { state, RenameMap } from "./state";
+import { Field, TextField, DialogButton, ToggleField } from "@steambrew/client";
+import React, { useState } from "react";
+import { state, saveConfig } from "./state";
+import type { RenameMap } from "./state";
 import { applyMapChange } from "./dom";
 import { applyAllCustomSortAs } from "./steam";
 
-/** Plugin settings panel rendered inside Millennium's Configure tab. */
 export const SettingsContent = () => {
     const [map,         setMap        ] = useState<RenameMap>(() => ({ ...state.currentMap }));
     const [newOriginal, setNewOriginal] = useState("");
     const [newRenamed,  setNewRenamed ] = useState("");
     const [sortChecked, setSortChecked] = useState(() => state.sortEnabled);
-
-    // Sync from pluginConfig on mount in case the component rendered before startup
-    // config loading resolved (Millennium renders settings content immediately).
-    useEffect(() => {
-        pluginConfig.get<boolean>("sortByCustomName")
-            .then(val => { const v = val ?? false; state.sortEnabled = v; setSortChecked(v); })
-            .catch(() => {});
-        pluginConfig.get<RenameMap>("renameMap")
-            .then(val => { if (val != null) { state.currentMap = val; setMap({ ...val }); } })
-            .catch(() => {});
-    }, []);
 
     const updateMap = (next: RenameMap) => {
         setMap(next);
@@ -46,8 +35,6 @@ export const SettingsContent = () => {
         updateMap({ ...map, [key]: value });
     };
 
-    // Field lays its direct children out in a single row. A single column-flex wrapper
-    // gives full control over layout inside each settings entry.
     const fullWidth: React.CSSProperties = { width: "100%", boxSizing: "border-box" };
     const column:    React.CSSProperties = { display: "flex", flexDirection: "column", width: "100%", rowGap: "8px" };
     const label:     React.CSSProperties = { fontSize: "12px", opacity: 0.6 };
@@ -62,7 +49,8 @@ export const SettingsContent = () => {
                 onChange={(checked) => {
                     state.sortEnabled = checked;
                     setSortChecked(checked);
-                    pluginConfig.set("sortByCustomName", checked);
+                    console.log("Saving sort-as setting:", checked);
+                    saveConfig();
                     applyAllCustomSortAs(checked);
                 }}
                 bottomSeparator="standard"
