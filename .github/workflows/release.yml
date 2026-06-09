@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install
+      - run: pnpm build
+
+      - name: Package plugin
+        run: |
+          mkdir -p dist/GameRenamer
+          cp plugin.json dist/GameRenamer/
+          cp -r .millennium dist/GameRenamer/
+          cd dist
+          zip -r GameRenamer-${{ github.ref_name }}.zip GameRenamer/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/GameRenamer-${{ github.ref_name }}.zip
+          generate_release_notes: true
