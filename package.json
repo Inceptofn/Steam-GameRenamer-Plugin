@@ -17,6 +17,9 @@
   "main": "./frontend/index.tsx",
   "author": "you",
   "license": "MIT",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@parcel/watcher", "esbuild"]
+  },
   "dependencies": {
     "@babel/core": "^7.29.7",
     "@steambrew/api": "^5.8.4",
