@@ -1,0 +1,9 @@
+{
+    "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
+
+    "name": "steam-game-renamer",
+    "common_name": "Game Renamer",
+    "description": "Rename different games in the Steam library",
+    "version": "1.0.0",
+    "useBackend": false
+}

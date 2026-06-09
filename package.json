@@ -1,0 +1,29 @@
+{
+  "scripts": {
+    "dev": "millennium-ttc --build dev",
+    "build": "millennium-ttc --build prod"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-react": "^7.29.7",
+    "@types/react": "16.14.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/webpack": "^5.28.5"
+  },
+  "type": "module",
+  "name": "FreakByDaylight",
+  "version": "1.0.0",
+  "description": "Rename different games in the Steam library",
+  "main": "./frontend/index.tsx",
+  "author": "you",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "^7.29.7",
+    "@steambrew/api": "^5.8.4",
+    "@steambrew/client": "^5.8.4",
+    "@steambrew/ttc": "^3.2.6",
+    "@steambrew/webkit": "^5.8.4",
+    "esbuild": "^0.28.0",
+    "preact": "^10.25.0"
+  }
+}
