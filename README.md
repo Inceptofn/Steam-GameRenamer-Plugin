@@ -1,36 +1,72 @@
-# Game Renamer
+# Game Renamer for Millennium
 
-A Millennium plugin that lets you display custom names for games in your Steam library.
+A Millennium plugin that lets you rename games in your Steam library with custom display names, without affecting your actual game files or Steam data.
 
-## Features
+## 📋 Prerequisites
 
-- Right-click any game in your library and select **Set custom name…** to rename it
-- The original game name is shown in the rename dialog alongside its header artwork
-- Renaming is non-destructive — clear the custom name at any time to restore the original
-- **Sort by custom name** — optionally sets Steam's internal sort field so the library sort order reflects your custom names
-  - Toggle this on or off from the plugin settings
-  - Disabling the toggle clears all custom sort overrides immediately
+Before installing this plugin, ensure you have:
 
-## Configuration
+-   **[Millennium](https://steambrew.app/)** installed and configured
 
-- Open Millennium settings and click **Configure** on the Game Renamer plugin
-- Add or remove rename rules manually from the settings panel
-- Toggle **Sort library by custom name** on or off
+### Images
 
-## Prerequisites
+![Context Menu](./contextmenu.png)
+![Modal](./modal.png)
+![Config](./config.png)
 
-- [Millennium](https://steambrew.app/)
+---
 
-## Installation
+## 🚀 Installation Guide
 
-- Copy the plugin ID from the [Millennium plugins](https://steambrew.app/plugins) page
-- Click **Plugins** and **Install a plugin** in the Millennium settings and paste the ID
-- Allow 10 seconds for the plugin to load after each startup
+### Method 1: Build from Source
 
-## Installation — dev build
+#### Step 1: Clone the Repository
 
-- Clone or download this repository
-- Place the folder under your Millennium plugins directory (usually `C:\Program Files (x86)\Steam\plugins`)
-- Enable the plugin in the Millennium settings if needed
-- Run `npm install && npm run build` inside the plugin folder
-- Allow 10 seconds for the plugin to load after each startup
+```bash
+git clone https://github.com/Inceptofn/Steam-GameRenamer-Plugin.git
+cd Steam-GameRenamer-Plugin
+```
+
+#### Step 2: Install Dependencies
+
+```bash
+npm install
+```
+
+#### Step 3: Build the Plugin
+
+**For development (auto-rebuilds on changes):**
+
+```bash
+npm run dev
+```
+
+**For production:**
+
+```bash
+npm run build
+```
+
+#### Step 4: Install to Steam
+
+**Copy to plugins directory**
+
+```bash
+# Windows
+xcopy /E /I . "C:\Program Files (x86)\Steam\plugins\steam-game-renamer"
+```
+
+#### Step 5: Enable Plugin in Steam
+
+1. Completely close Steam (including system tray)
+2. Restart Steam
+3. Go to **Millennium** → **Plugins**
+4. Enable "Game Renamer"
+5. Restart Steam once more
+
+---
+
+## 🔗 Links
+
+-   [Millennium Framework](https://github.com/SteamClientHomebrew/Millennium)
+-   [Steam Client](https://store.steampowered.com/about/)
