@@ -157,7 +157,7 @@ function tryInjectRenameItem(
     gameName: string,
     appId: number | null,
 ) {
-    if (root.classList?.contains("freakbydaylight-rename-item")) return;
+    if (root.classList?.contains("renamed-item")) return;
 
     const label = findPropertiesLabel(root);
     if (!label) return;
@@ -166,7 +166,7 @@ function tryInjectRenameItem(
     const container = row.parentElement;
     if (!container) return;
 
-    if (container.querySelector(".freakbydaylight-rename-item")) return;
+    if (container.querySelector(".renamed-item")) return;
     if (!gameName && appId == null) return;
 
     // Prefer the display_name from appStore — it's Steam's raw game name, unaffected
@@ -190,7 +190,7 @@ function tryInjectRenameItem(
 
     const labelPath = buildLabelPath(label, row);
     const newItem   = row.cloneNode(true) as HTMLElement;
-    newItem.classList.add("freakbydaylight-rename-item");
+    newItem.classList.add("renamed-item");
 
     let labelInClone: Node = newItem;
     for (const index of labelPath) {

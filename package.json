@@ -11,7 +11,7 @@
     "@types/webpack": "^5.28.5"
   },
   "type": "module",
-  "name": "FreakByDaylight",
+  "name": "GameRenamer",
   "version": "1.0.0",
   "description": "Rename different games in the Steam library",
   "main": "./frontend/index.tsx",
