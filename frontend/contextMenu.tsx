@@ -1,8 +1,8 @@
 import { showModal, ConfirmModal, TextField } from "@steambrew/client";
 import React, { useState } from "react";
-import { state, saveConfig } from "./state";
-import { findAppId, applyMapChange } from "./dom";
-import { setCustomSortAs } from "./steam";
+import { state, saveConfig, MAX_NAME_LENGTH } from "./state";
+import { findAppId } from "./dom";
+import { setCustomSortAs, applyMapChange, getOriginalName } from "./steam";
 
 // ─── Rename modal ─────────────────────────────────────────────────────────────
 
@@ -32,7 +32,7 @@ export const RenameModal = ({
 
     return (
         <ConfirmModal
-            strTitle={<span data-customtitle-ignore="">{`Rename "${originalName}"`}</span>}
+            strTitle={`Rename "${originalName}"`}
             strDescription="Enter the name you'd like to display instead:"
             strOKButtonText="Save"
             closeModal={closeModal}
@@ -40,7 +40,7 @@ export const RenameModal = ({
         >
             <TextField
                 value={value}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.currentTarget.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.currentTarget.value.slice(0, MAX_NAME_LENGTH))}
             />
             {landscape && (
                 <div style={{ display: "flex", marginTop: "12px", height: "160px" }}>
@@ -169,12 +169,11 @@ function tryInjectRenameItem(
     if (container.querySelector(".renamed-item")) return;
     if (!gameName && appId == null) return;
 
-    // Prefer the display_name from appStore — it's Steam's raw game name, unaffected
-    // by our DOM renaming and free of status badges like "- Update Queued".
-    // Fall back to reverse-mapping the captured DOM text if appStore isn't available.
-    const storedName = appId != null
-        ? ((window.appStore as any)?.GetAppOverviewByAppID?.(appId)?.display_name as string | undefined)
-        : undefined;
+    // Resolve the game's *original* name. getOriginalName returns the pre-override
+    // name even after we've overwritten display_name (it reads the stashed original),
+    // and free of status badges like "- Update Queued". Fall back to reverse-mapping
+    // the captured row text when there's no appId.
+    const storedName = appId != null ? getOriginalName(appId) : null;
 
     let originalName: string;
     if (storedName) {
@@ -242,7 +241,7 @@ function tryInjectRenameItem(
                 currentValue={currentValue}
                 appId={appId}
                 onConfirm={async (value) => {
-                    const trimmed   = value.trim();
+                    const trimmed   = value.trim().slice(0, MAX_NAME_LENGTH);
                     const reverting = trimmed === "" || trimmed === originalName;
 
                     const next = { ...state.currentMap };

@@ -1,9 +1,8 @@
 import { Field, TextField, DialogButton, ToggleField } from "@steambrew/client";
 import React, { useState } from "react";
-import { state, saveConfig } from "./state";
+import { state, saveConfig, MAX_NAME_LENGTH } from "./state";
 import type { RenameMap } from "./state";
-import { applyMapChange } from "./dom";
-import { applyAllCustomSortAs } from "./steam";
+import { applyMapChange, applyAllCustomSortAs } from "./steam";
 
 export const SettingsContent = () => {
     const [map,         setMap        ] = useState<RenameMap>(() => ({ ...state.currentMap }));
@@ -18,7 +17,7 @@ export const SettingsContent = () => {
 
     const addEntry = () => {
         const orig = newOriginal.trim();
-        const repl = newRenamed.trim();
+        const repl = newRenamed.trim().slice(0, MAX_NAME_LENGTH);
         if (!orig || !repl) return;
         updateMap({ ...map, [orig]: repl });
         setNewOriginal("");
@@ -32,7 +31,7 @@ export const SettingsContent = () => {
     };
 
     const updateEntry = (key: string, value: string) => {
-        updateMap({ ...map, [key]: value });
+        updateMap({ ...map, [key]: value.slice(0, MAX_NAME_LENGTH) });
     };
 
     const fullWidth: React.CSSProperties = { width: "100%", boxSizing: "border-box" };
@@ -40,7 +39,7 @@ export const SettingsContent = () => {
     const label:     React.CSSProperties = { fontSize: "12px", opacity: 0.6 };
 
     return (
-        <div data-freakbydaylight-ignore="" style={fullWidth}>
+        <div style={fullWidth}>
 
             <ToggleField
                 label="Sort library by custom name"
@@ -92,7 +91,7 @@ export const SettingsContent = () => {
                         style={fullWidth}
                         placeholder="e.g. Frag Simulator 2"
                         value={newRenamed}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRenamed(e.currentTarget.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRenamed(e.currentTarget.value.slice(0, MAX_NAME_LENGTH))}
                     />
                     <DialogButton style={fullWidth} onClick={addEntry}>
                         Add rule

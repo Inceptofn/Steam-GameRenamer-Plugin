@@ -1,12 +1,14 @@
 export type RenameMap = Record<string, string>;
 
-const STORAGE_KEY = "FreakByDaylight.config";
+/** Maximum length of a custom game name. */
+export const MAX_NAME_LENGTH = 64;
+
+const STORAGE_KEY = "GameRenamer.config";
 
 export const state = {
-    currentMap:       {} as RenameMap,
-    sortEnabled:      false,
-    appIdMap:         {} as Record<string, number>,
-    watchedDocuments: new Set<Document>(),
+    currentMap:  {} as RenameMap,
+    sortEnabled: false,
+    appIdMap:    {} as Record<string, number>,
 };
 
 export function loadPersistedConfig(): void {
@@ -26,11 +28,11 @@ export function loadPersistedConfig(): void {
     } catch {}
     // Migrate from old separate keys (first run after upgrade)
     try {
-        const raw = localStorage.getItem("FreakByDaylight.renameMap");
+        const raw = localStorage.getItem("GameRenamer.renameMap");
         if (raw) state.currentMap = JSON.parse(raw);
     } catch {}
     try {
-        const raw = localStorage.getItem("FreakByDaylight.appIdMap");
+        const raw = localStorage.getItem("GameRenamer.appIdMap");
         if (raw) {
             const parsed = JSON.parse(raw);
             state.appIdMap = Object.fromEntries(
