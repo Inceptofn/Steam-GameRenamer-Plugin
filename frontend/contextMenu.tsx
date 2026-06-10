@@ -2,7 +2,7 @@ import { showModal, ConfirmModal, TextField } from "@steambrew/client";
 import React, { useState } from "react";
 import { state, saveConfig, MAX_NAME_LENGTH } from "./state";
 import { findAppId } from "./dom";
-import { setCustomSortAs, applyMapChange, getOriginalName } from "./steam";
+import { enableSortFor, disableSortFor, applyMapChange, getOriginalName } from "./steam";
 
 // ─── Rename modal ─────────────────────────────────────────────────────────────
 
@@ -254,11 +254,12 @@ function tryInjectRenameItem(
 
                     if (appId != null) {
                         state.appIdMap[originalName] = appId;
-                        saveConfig();
 
                         if (state.sortEnabled) {
-                            setCustomSortAs(appId, reverting ? "" : trimmed);
+                            if (reverting) disableSortFor(originalName, appId);
+                            else           enableSortFor(originalName, appId, trimmed);
                         }
+                        saveConfig();
                     }
                 }}
             />,

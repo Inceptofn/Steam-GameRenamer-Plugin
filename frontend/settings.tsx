@@ -4,6 +4,22 @@ import { state, saveConfig, MAX_NAME_LENGTH } from "./state";
 import type { RenameMap } from "./state";
 import { applyMapChange, applyAllCustomSortAs } from "./steam";
 
+/** Uppercase, muted section heading — mirrors the theme settings' section style. */
+const SectionHeader = ({ children }: { children: React.ReactNode }) => (
+    <div
+        style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "0.6px",
+            textTransform: "uppercase",
+            opacity: 0.5,
+            margin: "18px 0 2px",
+        }}
+    >
+        {children}
+    </div>
+);
+
 export const SettingsContent = () => {
     const [map,         setMap        ] = useState<RenameMap>(() => ({ ...state.currentMap }));
     const [newOriginal, setNewOriginal] = useState("");
@@ -35,12 +51,17 @@ export const SettingsContent = () => {
     };
 
     const fullWidth: React.CSSProperties = { width: "100%", boxSizing: "border-box" };
-    const column:    React.CSSProperties = { display: "flex", flexDirection: "column", width: "100%", rowGap: "8px" };
-    const label:     React.CSSProperties = { fontSize: "12px", opacity: 0.6 };
+    const rowControls: React.CSSProperties = { display: "flex", gap: "8px", alignItems: "center", width: "100%" };
+
+    const entries = Object.entries(map);
+    const canAdd  = newOriginal.trim().length > 0 && newRenamed.trim().length > 0;
 
     return (
-        <div style={fullWidth}>
+        // data-gr-ignore opts this panel out of DOM text rewriting so the rule list
+        // keeps showing the real (original) game names, not their custom names.
+        <div style={fullWidth} data-gr-ignore="">
 
+            <SectionHeader>Options</SectionHeader>
             <ToggleField
                 label="Sort library by custom name"
                 description="Sets Steam's sort-as field when you rename a game. Turn off to stop affecting library sort order."
@@ -48,56 +69,59 @@ export const SettingsContent = () => {
                 onChange={(checked) => {
                     state.sortEnabled = checked;
                     setSortChecked(checked);
-                    console.log("Saving sort-as setting:", checked);
                     saveConfig();
                     applyAllCustomSortAs(checked);
                 }}
-                bottomSeparator="standard"
+                bottomSeparator="none"
             />
 
-            {Object.entries(map).map(([original, renamed]) => (
-                <Field key={original} label={original} bottomSeparator="standard" childrenLayout="below" focusable>
-                    <div style={column}>
-                        <div style={label}>Rename to</div>
-                        <TextField
-                            style={fullWidth}
-                            value={renamed}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateEntry(original, e.currentTarget.value)}
-                        />
-                        <DialogButton style={fullWidth} onClick={() => removeEntry(original)}>
-                            Remove
-                        </DialogButton>
-                    </div>
-                </Field>
-            ))}
-
-            <Field
-                label="Add rename rule"
-                description="Enter the original game name and what to rename it to."
-                bottomSeparator="none"
-                childrenLayout="below"
-                focusable
-            >
-                <div style={column}>
-                    <div style={label}>Original name</div>
-                    <TextField
-                        style={fullWidth}
-                        placeholder="e.g. Counter-Strike 2"
-                        value={newOriginal}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewOriginal(e.currentTarget.value)}
-                    />
-                    <div style={label}>New name</div>
-                    <TextField
-                        style={fullWidth}
-                        placeholder="e.g. Frag Simulator 2"
-                        value={newRenamed}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRenamed(e.currentTarget.value.slice(0, MAX_NAME_LENGTH))}
-                    />
-                    <DialogButton style={fullWidth} onClick={addEntry}>
-                        Add rule
-                    </DialogButton>
+            <SectionHeader>Your renames ({entries.length})</SectionHeader>
+            {entries.length === 0 ? (
+                <div style={{ fontSize: "13px", opacity: 0.5, padding: "4px 0 8px" }}>
+                    No custom names yet — add one below.
                 </div>
+            ) : (
+                entries.map(([original, renamed]) => (
+                    // Compact row: original name on the left (Field label), custom-name
+                    // field + remove button on the right (inline children).
+                    <Field key={original} label={original} bottomSeparator="standard">
+                        <div style={rowControls}>
+                            <TextField
+                                style={{ flex: 1 }}
+                                value={renamed}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateEntry(original, e.currentTarget.value)}
+                            />
+                            <DialogButton
+                                style={{ width: "auto", minWidth: 0, padding: "0 12px" }}
+                                onClick={() => removeEntry(original)}
+                            >
+                                ✕
+                            </DialogButton>
+                        </div>
+                    </Field>
+                ))
+            )}
+
+            <SectionHeader>Add a rule</SectionHeader>
+            <Field label="Original name" description="The game's real name, exactly as Steam shows it." bottomSeparator="standard">
+                <TextField
+                    style={fullWidth}
+                    placeholder="e.g. Counter-Strike 2"
+                    value={newOriginal}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewOriginal(e.currentTarget.value)}
+                />
             </Field>
+            <Field label="Custom name" bottomSeparator="none">
+                <TextField
+                    style={fullWidth}
+                    placeholder="e.g. Frag Simulator 2"
+                    value={newRenamed}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRenamed(e.currentTarget.value.slice(0, MAX_NAME_LENGTH))}
+                />
+            </Field>
+            <DialogButton style={{ ...fullWidth, marginTop: "8px" }} disabled={!canAdd} onClick={addEntry}>
+                Add rule
+            </DialogButton>
 
         </div>
     );

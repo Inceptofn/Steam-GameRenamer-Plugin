@@ -9,6 +9,14 @@ export const state = {
     currentMap:  {} as RenameMap,
     sortEnabled: false,
     appIdMap:    {} as Record<string, number>,
+    // The user's own sort-as string, captured the first time we override a game's
+    // sort order, keyed by original name. Lets us restore exactly what they had
+    // instead of wiping it — Steam's "Custom sort name" field is the same string.
+    originalSortAs: {} as Record<string, string>,
+    // Every document (main window + popups) we rewrite rendered text in. The data
+    // layer covers the library list/search/sort; this catches surfaces that read a
+    // different name source — notably the game detail-page header (strDisplayName).
+    watchedDocuments: new Set<Document>(),
 };
 
 export function loadPersistedConfig(): void {
@@ -21,6 +29,11 @@ export function loadPersistedConfig(): void {
             if (saved.appIdMap && typeof saved.appIdMap === "object") {
                 state.appIdMap = Object.fromEntries(
                     Object.entries(saved.appIdMap).map(([k, v]) => [k, Number(v)])
+                );
+            }
+            if (saved.originalSortAs && typeof saved.originalSortAs === "object") {
+                state.originalSortAs = Object.fromEntries(
+                    Object.entries(saved.originalSortAs).map(([k, v]) => [k, String(v)])
                 );
             }
             return;
@@ -47,5 +60,6 @@ export function saveConfig(): void {
         sortByCustomName: state.sortEnabled,
         renameMap: state.currentMap,
         appIdMap: state.appIdMap,
+        originalSortAs: state.originalSortAs,
     }));
 }

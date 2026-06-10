@@ -4,6 +4,6 @@
     "name": "steam-game-renamer",
     "common_name": "Game Renamer",
     "description": "Rename different games in the Steam library",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "useBackend": false
 }

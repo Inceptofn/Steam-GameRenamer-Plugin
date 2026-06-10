@@ -1,4 +1,5 @@
 import { state, RenameMap, saveConfig } from "./state";
+import { applyRenameToDocuments } from "./dom";
 
 // ─── Sort-as ───────────────────────────────────────────────────────────────────
 
@@ -13,20 +14,53 @@ import { state, RenameMap, saveConfig } from "./state";
  */
 export function setCustomSortAs(appId: number, sortAs: string) {
     const store = window.appStore as any;
-    store?.SetCustomSortAs?.call(store, appId, sortAs);
+    if (!store?.SetCustomSortAs) return;
+    // Skip when it's already correct: avoids needless work and prevents a feedback
+    // loop with the overview-change listener (SetCustomSortAs itself emits a change).
+    const ov = store.GetAppOverviewByAppID?.(appId);
+    if (ov && (ov.sort_as ?? "") === sortAs) return;
+    store.SetCustomSortAs.call(store, appId, sortAs);
+}
+
+function liveSortAs(appId: number): string {
+    const ov = (window.appStore as any)?.GetAppOverviewByAppID?.(appId);
+    return ov?.sort_as ?? "";
 }
 
 /**
- * Applies or clears the sort-as string for every game that has a known appId.
- * Called when the "Sort library by custom name" toggle changes.
+ * Turns our custom sort order ON for one game: stashes the user's own sort-as the
+ * first time (so it can be restored later) and sets the renamed name as the sort key.
+ */
+export function enableSortFor(original: string, appId: number, renamed: string) {
+    if (!(original in state.originalSortAs)) {
+        state.originalSortAs[original] = liveSortAs(appId);
+    }
+    setCustomSortAs(appId, renamed);
+}
+
+/**
+ * Turns our custom sort order OFF for one game by restoring the user's *own* sort-as.
+ * If we never overrode this game, it's left completely untouched — we must never blank
+ * out a custom sort name the user set themselves.
+ */
+export function disableSortFor(original: string, appId: number) {
+    if (!(original in state.originalSortAs)) return;
+    setCustomSortAs(appId, state.originalSortAs[original]);
+    delete state.originalSortAs[original];
+}
+
+/**
+ * Applies or restores the sort-as string for every renamed game.
+ * Called when the "Sort library by custom name" toggle changes and at startup.
  */
 export function applyAllCustomSortAs(enabled: boolean) {
-    for (const [originalName, renamedName] of Object.entries(state.currentMap)) {
-        const appId = state.appIdMap[originalName];
-        if (appId != null) {
-            setCustomSortAs(appId, enabled ? renamedName : "");
-        }
+    for (const [original, renamed] of Object.entries(state.currentMap)) {
+        const appId = state.appIdMap[original] ?? findAppIdByName(original);
+        if (appId == null) continue;
+        if (enabled) enableSortFor(original, appId, renamed);
+        else         disableSortFor(original, appId);
     }
+    saveConfig();
 }
 
 // ─── Display-name override (data layer) ─────────────────────────────────────────
@@ -75,6 +109,14 @@ export function setDisplayName(appId: number, name: string | null) {
     if (!map || !ov) return;
 
     const original = ov[ORIGINAL_MARKER] ?? ov.display_name;
+
+    // Skip if the overview is already in the desired state. This keeps the
+    // overview-change listener from churning repaints on every Steam update.
+    const overriding = !!(name && name !== original);
+    const desiredName   = overriding ? name     : original;
+    const desiredMarker = overriding ? original : undefined;
+    if (ov.display_name === desiredName && (ov[ORIGINAL_MARKER] ?? undefined) === desiredMarker) return;
+
     const clone = Object.assign(Object.create(Object.getPrototypeOf(ov)), ov);
 
     if (name && name !== original) {
@@ -112,6 +154,8 @@ export function applyMapChange(next: RenameMap) {
         else                 delete state.appIdMap[original];
     }
 
+    // Update already-rendered surfaces the data layer doesn't reach (detail-page header).
+    applyRenameToDocuments(prev, next);
     saveConfig();
 }
 
@@ -124,4 +168,35 @@ export function applyAllRenames() {
         setDisplayName(appId, renamed);
     }
     saveConfig();
+}
+
+/**
+ * Re-pushes every saved rename (and our sort-as override, when enabled) to the live
+ * app store. Idempotent — guards in setDisplayName/setCustomSortAs make repeated calls
+ * cheap. Used to recover after Steam replaces overview objects post-startup.
+ */
+function reapplyAll() {
+    for (const [original, renamed] of Object.entries(state.currentMap)) {
+        const appId = state.appIdMap[original] ?? findAppIdByName(original);
+        if (appId == null) continue;
+        setDisplayName(appId, renamed);
+        // Only re-push sort-as we already own; never stash a clobbered value as "original".
+        if (state.sortEnabled && original in state.originalSortAs) {
+            setCustomSortAs(appId, renamed);
+        }
+    }
+}
+
+/**
+ * Steam streams app-overview updates after startup that replace overview objects in
+ * m_mapApps, wiping our display-name override and resetting sort-as. Re-apply on every
+ * such change (coalesced) so custom names survive a restart and stay put.
+ */
+export function subscribeToOverviewChanges() {
+    let pending = false;
+    SteamClient.Apps.RegisterForAppOverviewChanges(() => {
+        if (pending) return;
+        pending = true;
+        setTimeout(() => { pending = false; reapplyAll(); }, 100);
+    });
 }

@@ -2,12 +2,14 @@ import { Millennium, definePlugin, sleep, IconsModule } from "@steambrew/client"
 import { state, loadPersistedConfig } from "./state";
 import { injectContextMenu } from "./contextMenu";
 import { SettingsContent } from "./settings";
-import { applyAllCustomSortAs, applyAllRenames } from "./steam";
+import { applyAllCustomSortAs, applyAllRenames, subscribeToOverviewChanges } from "./steam";
+import { watchDocument } from "./dom";
 
 async function OnPopupCreation(popup: any) {
     await sleep(500);
     const doc: Document = popup.m_popup?.document;
     if (!doc) return;
+    watchDocument(doc);
     injectContextMenu(doc);
 }
 
@@ -26,6 +28,13 @@ export default definePlugin(async () => {
         applyAllRenames();
         applyAllCustomSortAs(state.sortEnabled);
     });
+
+    // Rewrite any already-open windows; AddWindowCreateHook covers ones opened later.
+    for (const doc of state.watchedDocuments) watchDocument(doc);
+
+    // Steam keeps refreshing app overviews after startup, which wipes our overrides.
+    // Re-apply on every overview change so custom names persist across restarts.
+    subscribeToOverviewChanges();
 
     Millennium.AddWindowCreateHook!(OnPopupCreation);
     return {
