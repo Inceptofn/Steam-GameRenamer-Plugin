@@ -12,7 +12,7 @@
   },
   "type": "module",
   "name": "GameRenamer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Rename different games in the Steam library",
   "main": "./frontend/index.tsx",
   "author": "you",
