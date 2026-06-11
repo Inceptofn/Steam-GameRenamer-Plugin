@@ -53,49 +53,66 @@ export const RenameModal = ({
 
 // ─── Context menu helpers ─────────────────────────────────────────────────────
 
-/**
- * Finds the "Properties…" text leaf inside a newly added DOM node.
- * Returns null if the node isn't a game context menu.
- */
-function findPropertiesLabel(root: HTMLElement): HTMLElement | null {
-    const isProperties = (text: string) => /^properties(\.\.\.|…)?$/i.test(text);
-
-    if (root.children.length === 0 && isProperties(root.textContent?.trim() ?? "")) {
-        return root;
-    }
-
-    for (const el of Array.from(root.querySelectorAll("*")) as HTMLElement[]) {
-        if (el.children.length === 0 && isProperties(el.textContent?.trim() ?? "")) {
-            return el;
-        }
-    }
-
-    return null;
+/** The element's React fiber, or null. */
+function getReactFiber(el: Element): any {
+    const key = Object.keys(el).find(k => k.startsWith("__reactFiber$"));
+    return key ? (el as any)[key] : null;
 }
 
 /**
- * Climbs from `label` to the element that represents the single clickable row.
+ * Steam's localized label for the game context menu's "Manage" submenu.
  *
- * Steam nests labels inside several span wrappers, so `label` is often a deep leaf.
- * The actual row is the first ancestor whose parent contains multiple sibling rows
- * (Play, Manage, Properties, …). Stopping too early would cause the entire menu
- * to be cloned instead of just one row.
+ * Resolved from Steam's own localization system (`#GameAction_Manage`) rather than
+ * matching the English word, so the Manage flyout is found in every UI language. Cached
+ * after the first successful lookup.
  */
-function findMenuRow(label: HTMLElement): HTMLElement {
-    const looksLikeRow = (el: Element) => {
-        const text = el.textContent?.trim() ?? "";
-        return text.length > 0 && text.length <= 100 && !text.includes("\n");
-    };
+let cachedManageLabel: string | null = null;
+function manageLabel(): string | null {
+    if (cachedManageLabel) return cachedManageLabel;
+    const lm = (window as any).LocalizationManager;
+    const resolved = lm?.LocalizeString?.("#GameAction_Manage");
+    if (typeof resolved === "string" && resolved.trim()) cachedManageLabel = resolved.trim();
+    return cachedManageLabel;
+}
 
-    let row = label;
-    for (let depth = 0; depth < 8; depth++) {
-        const parent = row.parentElement;
-        if (!parent) break;
-        const siblingRows = Array.prototype.filter.call(parent.children, looksLikeRow) as Element[];
-        if (siblingRows.length > 1) break;
-        row = parent;
+/**
+ * If `root` is (part of) the Manage submenu flyout, returns one of its item rows;
+ * otherwise null.
+ *
+ * Steam mounts each submenu as its own DOM subtree, and every menu carries its title in
+ * the React fiber as `{ label, children: [...] }`. The flyout's enclosing menu fiber has
+ * `label` equal to the localized "Manage" string, while the top-level menu's enclosing
+ * fiber has the game's name — so matching that label pinpoints the Manage flyout without
+ * reading on-screen text or relying on row order/count. Tracking the *highest* labelled
+ * menu fiber skips the Manage item's own submenu definition nested in the top-level menu
+ * (whose label is also "Manage") and lands on the subtree's true container.
+ */
+function findManageFlyout(root: HTMLElement): HTMLElement | null {
+    const wanted = manageLabel();
+    if (!wanted) return null;
+
+    const item = (root.matches?.('[role="menuitem"]')
+        ? root
+        : root.querySelector('[role="menuitem"]')) as HTMLElement | null;
+    if (!item) return null;
+
+    let menuLabel: string | null = null;
+    for (let fiber = getReactFiber(item), depth = 0; fiber && depth < 15; fiber = fiber.return, depth++) {
+        const props = fiber.memoizedProps;
+        if (props && typeof props.label === "string" && Array.isArray(props.children)) {
+            menuLabel = props.label;
+        }
     }
 
+    return menuLabel === wanted ? item : null;
+}
+
+/** The leaf element inside a menu row that holds its visible text. */
+function findRowLabelLeaf(row: HTMLElement): HTMLElement {
+    if (row.children.length === 0) return row;
+    for (const el of Array.from(row.querySelectorAll("*")) as HTMLElement[]) {
+        if (el.children.length === 0 && (el.textContent?.trim() ?? "")) return el;
+    }
     return row;
 }
 
@@ -148,8 +165,8 @@ function closeContextMenu(container: Element) {
 }
 
 /**
- * Inspects a newly added DOM node and, if it is part of a game context menu,
- * inserts a Rename item above the Properties row.
+ * Inspects a newly added DOM node and, if it is the game's Manage submenu flyout,
+ * inserts a Rename item at the top of it.
  */
 function tryInjectRenameItem(
     root: HTMLElement,
@@ -159,10 +176,9 @@ function tryInjectRenameItem(
 ) {
     if (root.classList?.contains("renamed-item")) return;
 
-    const label = findPropertiesLabel(root);
-    if (!label) return;
+    const row = findManageFlyout(root);
+    if (!row) return;
 
-    const row       = findMenuRow(label);
     const container = row.parentElement;
     if (!container) return;
 
@@ -187,6 +203,7 @@ function tryInjectRenameItem(
 
     // ── Build the clone ──────────────────────────────────────────────────────
 
+    const label     = findRowLabelLeaf(row);
     const labelPath = buildLabelPath(label, row);
     const newItem   = row.cloneNode(true) as HTMLElement;
     newItem.classList.add("renamed-item");
@@ -211,12 +228,12 @@ function tryInjectRenameItem(
         }
     };
 
-    const propertiesPropsEl = findReactPropsElement(label, container);
+    const rowPropsEl = findReactPropsElement(label, container);
 
     newItem.addEventListener("mouseenter", () => {
-        if (propertiesPropsEl) {
-            const propsKey = Object.keys(propertiesPropsEl).find(k => k.startsWith("__reactProps$"))!;
-            const props    = (propertiesPropsEl as any)[propsKey];
+        if (rowPropsEl) {
+            const propsKey = Object.keys(rowPropsEl).find(k => k.startsWith("__reactProps$"))!;
+            const props    = (rowPropsEl as any)[propsKey];
             props.onMouseEnter?.(new MouseEvent("mouseenter", { bubbles: true,  cancelable: true }));
             props.onMouseLeave?.(new MouseEvent("mouseleave", { bubbles: false, cancelable: true }));
         }
@@ -267,16 +284,18 @@ function tryInjectRenameItem(
         );
     });
 
-    container.insertBefore(newItem, row);
+    // Place Rename at the top of the Manage flyout.
+    container.insertBefore(newItem, container.firstElementChild);
 }
 
 /**
  * Injects a "Rename" item into Steam's game context menu for every popup window.
  *
  * Steam reminifies its CSS module class names on every build, so querying by class is
- * fragile. Instead, the "Properties…" row (always present, label never changes) is
- * located by its text and cloned as a styling template, giving correct appearance with
- * no dependency on minified identifiers.
+ * fragile. Instead the Manage submenu flyout is identified through its React fiber (its
+ * menu label matches Steam's localized "Manage" string), and one of its rows is cloned
+ * as a styling template — giving correct appearance with no dependency on minified
+ * identifiers or on the UI language.
  */
 export function injectContextMenu(doc: Document) {
     let lastRightClickedName:  string        = "";

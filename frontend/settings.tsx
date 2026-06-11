@@ -22,22 +22,11 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
 
 export const SettingsContent = () => {
     const [map,         setMap        ] = useState<RenameMap>(() => ({ ...state.currentMap }));
-    const [newOriginal, setNewOriginal] = useState("");
-    const [newRenamed,  setNewRenamed ] = useState("");
     const [sortChecked, setSortChecked] = useState(() => state.sortEnabled);
 
     const updateMap = (next: RenameMap) => {
         setMap(next);
         applyMapChange(next);
-    };
-
-    const addEntry = () => {
-        const orig = newOriginal.trim();
-        const repl = newRenamed.trim().slice(0, MAX_NAME_LENGTH);
-        if (!orig || !repl) return;
-        updateMap({ ...map, [orig]: repl });
-        setNewOriginal("");
-        setNewRenamed("");
     };
 
     const removeEntry = (key: string) => {
@@ -54,7 +43,6 @@ export const SettingsContent = () => {
     const rowControls: React.CSSProperties = { display: "flex", gap: "8px", alignItems: "center", width: "100%" };
 
     const entries = Object.entries(map);
-    const canAdd  = newOriginal.trim().length > 0 && newRenamed.trim().length > 0;
 
     return (
         // data-gr-ignore opts this panel out of DOM text rewriting so the rule list
@@ -78,7 +66,7 @@ export const SettingsContent = () => {
             <SectionHeader>Your renames ({entries.length})</SectionHeader>
             {entries.length === 0 ? (
                 <div style={{ fontSize: "13px", opacity: 0.5, padding: "4px 0 8px" }}>
-                    No custom names yet — add one below.
+                    No custom names yet — right-click a game and choose Rename to add one.
                 </div>
             ) : (
                 entries.map(([original, renamed]) => (
@@ -101,27 +89,6 @@ export const SettingsContent = () => {
                     </Field>
                 ))
             )}
-
-            <SectionHeader>Add a rule</SectionHeader>
-            <Field label="Original name" description="The game's real name, exactly as Steam shows it." bottomSeparator="standard">
-                <TextField
-                    style={fullWidth}
-                    placeholder="e.g. Counter-Strike 2"
-                    value={newOriginal}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewOriginal(e.currentTarget.value)}
-                />
-            </Field>
-            <Field label="Custom name" bottomSeparator="none">
-                <TextField
-                    style={fullWidth}
-                    placeholder="e.g. Frag Simulator 2"
-                    value={newRenamed}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRenamed(e.currentTarget.value.slice(0, MAX_NAME_LENGTH))}
-                />
-            </Field>
-            <DialogButton style={{ ...fullWidth, marginTop: "8px" }} disabled={!canAdd} onClick={addEntry}>
-                Add rule
-            </DialogButton>
 
         </div>
     );
