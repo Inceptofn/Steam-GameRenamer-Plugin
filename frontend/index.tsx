@@ -4,6 +4,7 @@ import { injectContextMenu } from "./contextMenu";
 import { SettingsContent } from "./settings";
 import { applyAllCustomSortAs, applyAllRenames, subscribeToOverviewChanges } from "./steam";
 import { watchDocument } from "./dom";
+import { initializeLocale } from "./locales";
 
 async function OnPopupCreation(popup: any) {
     await sleep(500);
@@ -22,6 +23,7 @@ async function whenAppsReady(): Promise<void> {
 }
 
 export default definePlugin(async () => {
+    await initializeLocale();
     loadPersistedConfig();
 
     whenAppsReady().then(() => {
