@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { state, saveConfig, MAX_NAME_LENGTH } from "./state";
 import { findAppId } from "./dom";
 import { enableSortFor, disableSortFor, applyMapChange, getOriginalName } from "./steam";
+import { format, strings } from "./locales";
 
 // ─── Rename modal ─────────────────────────────────────────────────────────────
 
@@ -26,15 +27,16 @@ export const RenameModal = ({
     closeModal?: () => void;
 }) => {
     const [value, setValue] = useState(currentValue);
+    const locale = strings();
 
     const overview  = appId != null ? (window.appStore as any)?.GetAppOverviewByAppID?.(appId) : null;
     const landscape = overview ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${overview.appid}/header.jpg` : "";
 
     return (
         <ConfirmModal
-            strTitle={`Rename "${originalName}"`}
-            strDescription="Enter the name you'd like to display instead:"
-            strOKButtonText="Save"
+            strTitle={format(locale.renameTitle, { name: originalName })}
+            strDescription={locale.renameDescription}
+            strOKButtonText={locale.save}
             closeModal={closeModal}
             onOK={() => onConfirm(value)}
         >
@@ -214,9 +216,10 @@ function tryInjectRenameItem(
         if (!next) { labelInClone = newItem; break; }
         labelInClone = next;
     }
+    const locale = strings();
     labelInClone.textContent = state.currentMap[originalName]
-        ? `Rename: "${state.currentMap[originalName]}"`
-        : "Set custom name…";
+        ? format(locale.renameCurrent, { name: state.currentMap[originalName] })
+        : locale.setCustomName;
 
     // ── Hover handling ───────────────────────────────────────────────────────
 
