@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { state, saveConfig, MAX_NAME_LENGTH } from "./state";
 import type { RenameMap } from "./state";
 import { applyMapChange, applyAllCustomSortAs } from "./steam";
+import { format, strings } from "./locales";
 
 /** Uppercase, muted section heading — mirrors the theme settings' section style. */
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
@@ -21,6 +22,7 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const SettingsContent = () => {
+    const locale = strings();
     const [map,         setMap        ] = useState<RenameMap>(() => ({ ...state.currentMap }));
     const [sortChecked, setSortChecked] = useState(() => state.sortEnabled);
 
@@ -49,10 +51,10 @@ export const SettingsContent = () => {
         // keeps showing the real (original) game names, not their custom names.
         <div style={fullWidth} data-gr-ignore="">
 
-            <SectionHeader>Options</SectionHeader>
+            <SectionHeader>{locale.options}</SectionHeader>
             <ToggleField
-                label="Sort library by custom name"
-                description="Sets Steam's sort-as field when you rename a game. Turn off to stop affecting library sort order."
+                label={locale.sortLabel}
+                description={locale.sortDescription}
                 checked={sortChecked}
                 onChange={(checked) => {
                     state.sortEnabled = checked;
@@ -63,10 +65,10 @@ export const SettingsContent = () => {
                 bottomSeparator="none"
             />
 
-            <SectionHeader>Your renames ({entries.length})</SectionHeader>
+            <SectionHeader>{format(locale.yourRenames, { count: entries.length })}</SectionHeader>
             {entries.length === 0 ? (
                 <div style={{ fontSize: "13px", opacity: 0.5, padding: "4px 0 8px" }}>
-                    No custom names yet — right-click a game and choose Rename to add one.
+                    {locale.noCustomNames}
                 </div>
             ) : (
                 entries.map(([original, renamed]) => (
